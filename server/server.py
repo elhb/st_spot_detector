@@ -233,6 +233,16 @@ def get_tiles():
     }
     return ret
 
+@app.route('/loginerr')
+@app.route('/loginerr/<filepath:path>')
+def loginerr(filepath='index.html'):
+    access_token = request.get_cookie("access_token")
+
+    if valid_token(access_token):
+        redirect('/')
+    else:
+        return static_file(filepath, root='../client/devel/login')
+
 @app.route('/login')
 @app.route('/login/<filepath:path>')
 def login(filepath='index.html'):
@@ -268,15 +278,11 @@ def loginpost():
         # must set cookies after creating static file since creating this
         # object resets the headers
         filepath='index.html'
-        #resp = static_file(filepath, root='../client/devel')
-        #resp.set_cookie("access_token", access_token, path='/')
         response.set_cookie("access_token", access_token, path='/')
         redirect('/')
-
-        #session_cacher.authorized = True
     else:
         print("Failed to authenticate because of %s: %s" % (r.reason, json_payload['error_description']))
-        #session_cacher.authorized = False
+        redirect('loginerr/')
 
 @app.route('/')
 @app.route('/<filepath:path>')
