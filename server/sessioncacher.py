@@ -5,8 +5,10 @@ import os
 
 class SessionCache:
     def __init__(self, session_id):
+        self.oauth2_token = None
+        self.oauth2_ref_token = None
         self.session_id = session_id
-        self.creation_time  = time.time()
+        self.creation_time = time.time()
         # cy3 image saved for spot detection
         self.spot_image = None
         self.tissue_image = None

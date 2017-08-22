@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
 
+#### INSECURE; DON'T USE ####
+import os
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+#### INSECURE; DON'T USE ####
+
 import ast
 import copy
 import time
@@ -7,8 +12,8 @@ import time
 import numpy as np
 
 import bottle
-from bottle import BaseRequest, error, get, post, response, request, route, \
-    run, static_file
+from bottle import BaseRequest, error, get, post, redirect, response, request, \
+    route, run, static_file
 
 from imageprocessor import ImageProcessor
 from logger import Logger
@@ -16,6 +21,10 @@ from sessioncacher import SessionCacher
 from spots import Spots
 from tilemap import Tilemap
 from PIL import Image
+
+import requests
+from requests_oauthlib import OAuth2Session
+from oauthlib.oauth2 import LegacyApplicationClient
 
 import warnings
 warnings.simplefilter('ignore', Image.DecompressionBombWarning)
@@ -31,6 +40,23 @@ image_processor = ImageProcessor()
 app = application = bottle.Bottle()
 
 logger = Logger("st_aligner.log", toFile=False)
+
+## OAuth2 stuff
+client_id = "st-viewer-client"
+client_secret = "" 
+token_url = "https://admin.spatialtranscriptomicsresearch.org/api/oauth/token"
+grant_type = "password"
+authorized = False
+##
+
+def valid_token(token):
+    token_string = "Bearer %s" % token
+    request_url = "https://admin.spatialtranscriptomicsresearch.org/api/rest/account"
+    r = requests.get(request_url, headers={
+        'Authorization': token_string
+    })
+    valid = r.status_code == 200
+    return valid
 
 @app.get('/session_id')
 def create_session_cache():
@@ -206,14 +232,62 @@ def get_tiles():
     }
     return ret
 
+@app.route('/login')
+@app.route('/login/<filepath:path>')
+def login(filepath='index.html'):
+    access_token = request.get_cookie("access_token")
+
+    if valid_token(access_token):
+        redirect('/')
+    else:
+        return static_file(filepath, root='../client/devel/login')
+
+@app.post('/loginpost')
+def loginpost():
+    user = request.forms.get("j_username")
+    pw = request.forms.get("j_password")
+
+    r = requests.post(token_url, data={
+        'grant_type': 'password',
+        'username': user,
+        'password': pw,
+        'client_id': client_id,
+        'client_secret': client_secret
+    })
+
+    json_payload = r.json()
+
+    if r.status_code == 200:
+        access_token = json_payload['access_token']
+        refresh_token = json_payload['refresh_token']
+        expiry_time = json_payload['expires_in']
+
+        print("Successful login by %s with token %s" % (user, access_token))
+
+        # must set cookies after creating static file since creating this
+        # object resets the headers
+        filepath='index.html'
+        resp = static_file(filepath, root='../client/devel')
+        resp.set_cookie("access_token", access_token, path='/')
+
+        return resp
+        #session_cacher.authorized = True
+    else:
+        print("Failed to authenticate because of %s: %s" % (r.reason, json_payload['error_description']))
+        #session_cacher.authorized = False
+
 @app.route('/')
 @app.route('/<filepath:path>')
 def serve_site(filepath='index.html'):
-    return static_file(filepath, root='../client/devel')
+    access_token = request.get_cookie("access_token")
+    if valid_token(access_token):
+        return static_file(filepath, root='../client/devel')
+    else:
+        redirect('/login')
 
 @app.error(404)
 def error404(error):
     return "404 Not Found"
 
-if(__name__ == "__main__"): # if this file is run from the terminal
-    app.run(host='0.0.0.0', port=8080, debug=True, reloader=True)
+if __name__ == "__main__": # if this file is run from the terminal
+    app.run(host='127.0.0.1', port=8080, debug=True, reloader=True)

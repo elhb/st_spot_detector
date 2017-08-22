@@ -82,6 +82,12 @@ canvas:active {
     cursor:         move;
 }
 
+.form-signin {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+}
+
 .menu-wrapper {
     position: fixed;
     top: 20px;
