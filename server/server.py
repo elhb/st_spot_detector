@@ -43,7 +43,8 @@ logger = Logger("st_aligner.log", toFile=False)
 
 ## OAuth2 stuff
 client_id = "st-viewer-client"
-client_secret = "" 
+with open("clientsecret.txt", 'r') as f:
+    client_secret = f.readline().rstrip()
 token_url = "https://admin.spatialtranscriptomicsresearch.org/api/oauth/token"
 grant_type = "password"
 authorized = False
@@ -232,6 +233,16 @@ def get_tiles():
     }
     return ret
 
+@app.route('/loginerr')
+@app.route('/loginerr/<filepath:path>')
+def loginerr(filepath='index.html'):
+    access_token = request.get_cookie("access_token")
+
+    if valid_token(access_token):
+        redirect('/')
+    else:
+        return static_file(filepath, root='../client/devel/login')
+
 @app.route('/login')
 @app.route('/login/<filepath:path>')
 def login(filepath='index.html'):
@@ -267,14 +278,11 @@ def loginpost():
         # must set cookies after creating static file since creating this
         # object resets the headers
         filepath='index.html'
-        resp = static_file(filepath, root='../client/devel')
-        resp.set_cookie("access_token", access_token, path='/')
-
-        return resp
-        #session_cacher.authorized = True
+        response.set_cookie("access_token", access_token, path='/')
+        redirect('/')
     else:
         print("Failed to authenticate because of %s: %s" % (r.reason, json_payload['error_description']))
-        #session_cacher.authorized = False
+        redirect('loginerr/')
 
 @app.route('/')
 @app.route('/<filepath:path>')
@@ -290,4 +298,4 @@ def error404(error):
     return "404 Not Found"
 
 if __name__ == "__main__": # if this file is run from the terminal
-    app.run(host='127.0.0.1', port=8080, debug=True, reloader=True)
+    app.run(host='0.0.0.0', port=8080, debug=True, reloader=True)
