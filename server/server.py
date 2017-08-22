@@ -241,7 +241,7 @@ def loginerr(filepath='index.html'):
     if valid_token(access_token):
         redirect('/')
     else:
-        return static_file(filepath, root='../client/devel/login')
+        return static_file(filepath, root='../client/devel/loginerr')
 
 @app.route('/login')
 @app.route('/login/<filepath:path>')
@@ -282,7 +282,7 @@ def loginpost():
         redirect('/')
     else:
         print("Failed to authenticate because of %s: %s" % (r.reason, json_payload['error_description']))
-        redirect('loginerr/')
+        redirect('/loginerr')
 
 @app.route('/')
 @app.route('/<filepath:path>')
