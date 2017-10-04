@@ -1,10 +1,5 @@
 # -*- coding: utf-8 -*-
 
-#### INSECURE; DON'T USE ####
-import os
-os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
-#### INSECURE; DON'T USE ####
-
 import ast
 import copy
 import time
