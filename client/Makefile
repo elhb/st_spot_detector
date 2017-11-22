@@ -13,8 +13,8 @@ endif
 .PHONY: all clean
 
 all: \
-	$(shell find $(SRC_DIR) -type f | grep -e \.html$ | sed -r 's/^$(SRC_DIR)/$(BIN_DIR)/') \
-	$(shell find $(SRC_DIR) -type f | grep -e \.png$ | sed -r 's/^$(SRC_DIR)/$(BIN_DIR)/') \
+	$(shell find $(SRC_DIR) -type f | grep -e \.html$ | sed -E 's/^$(SRC_DIR)/$(BIN_DIR)/') \
+	$(shell find $(SRC_DIR) -type f | grep -e \.png$ | sed -E 's/^$(SRC_DIR)/$(BIN_DIR)/') \
 	$(BIN_DIR)/stylesheet.css \
 	$(BIN_DIR)/main.bundle.js \
 
